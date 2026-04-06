@@ -121,7 +121,7 @@ class DashboardView(APIView):
         # recent activity
         recent = data.order_by('-uploaded_at')[:5].values()
 
-        #  category wise
+        # category wise
         category_data = data.values('category').annotate(total=Sum('amount'))
 
         return Response({
