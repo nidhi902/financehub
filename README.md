@@ -7,6 +7,14 @@ Finance Hub is a Django REST API-based backend system designed to manage financi
 The system ensures secure data access where users can only interact with data according to their roles.
 
 ---
+## 📁 Project Structure
+
+The project is named **StudyHub** and is organized into two main Django apps:
+
+* **user_app** → Handles user authentication, signup, login, and role management (Admin, Analyst, User)
+* **finance_data** → Manages financial records and dashboard analytics
+
+This modular structure helps maintain clear separation of concerns and improves scalability.
 
 ## 🧠 System Design (Backend Structure)
 
@@ -69,7 +77,7 @@ Note: All endpoints are protected and require token authentication except signup
 
 ## 📊 Dashboard API
 
-* GET /dashboard/
+* GET /financedata/dashboard/
   The dashboard API returns aggregated data instead of raw records, reducing client-side computation.
 
 ### Provides:
