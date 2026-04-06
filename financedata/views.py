@@ -1,9 +1,11 @@
 from django.http import HttpResponse
 
 # def index(request):
-#     return HttpResponse("Materials OK ✅")
+#     return HttpResponse("Materials OK ")
 
 # views.py
+from django.db.models import Sum
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,7 +22,7 @@ class FinanceDataView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    # 🔹 GET → data fetch
+    # GET → data fetch
     def get(self, request):
         user = request.user
         role = user.profile.role
@@ -37,7 +39,7 @@ class FinanceDataView(APIView):
         serializer = FinanceDataSerializer(data, many=True)
         return Response(serializer.data)
 
-    # 🔹 POST → create data
+    # POST → create data
     def post(self, request):
         serializer = FinanceDataSerializer(data=request.data)
 
@@ -47,7 +49,7 @@ class FinanceDataView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 🔹 PUT → update data
+    # PUT → update data
     def put(self, request, pk):
         user = request.user
         role = user.profile.role
@@ -57,7 +59,7 @@ class FinanceDataView(APIView):
         except Financedata.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
 
-        # 🔥 Role check
+        # Role check
         if role in ['admin', 'analyst']:
             serializer = FinanceDataSerializer(obj, data=request.data)
 
@@ -69,7 +71,7 @@ class FinanceDataView(APIView):
 
         return Response({"error": "Permission Denied"}, status=403)
 
-    # 🔹 DELETE → delete data
+    # DELETE → delete data
     def delete(self, request, pk):
         user = request.user
         role = user.profile.role
@@ -84,3 +86,48 @@ class FinanceDataView(APIView):
             return Response({"message": "Deleted successfully"})
 
         return Response({"error": "Only admin can delete"}, status=403)
+    
+    
+    
+
+
+
+
+
+class DashboardView(APIView):
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        role = user.profile.role
+
+        #role-based data
+        if role in ['admin', 'analyst']:
+            data = Financedata.objects.all()
+        else:
+            data = Financedata.objects.filter(uploaded_by=user)
+
+        #total income
+        total_income = data.filter(category="Income").aggregate(Sum('amount'))['amount__sum'] or 0
+
+        # total expense
+        total_expense = data.exclude(category="Income").aggregate(Sum('amount'))['amount__sum'] or 0
+
+        # net balance
+        net_balance = total_income - total_expense
+
+        # recent activity
+        recent = data.order_by('-uploaded_at')[:5].values()
+
+        #  category wise
+        category_data = data.values('category').annotate(total=Sum('amount'))
+
+        return Response({
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_balance": net_balance,
+            "recent_transactions": list(recent),
+            "category_wise": list(category_data)
+        })
